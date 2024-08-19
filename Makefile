@@ -1,62 +1,54 @@
-# Makefile
+# Proje adını ve hedef dosyayı tanımlayın
+TARGET = funix
 
 # Derleyici ve bayraklar
 CC = gcc
-CFLAGS = -Wall -Iuserland -Ikernel -nostdlib -nostartfiles -ffreestanding -g
+CFLAGS = -Wall -Wextra -nostdlib -ffreestanding -O2
 
-# Dizinler
-KERNEL_DIR = kernel
-USERLAND_DIR = userland
-BUILD_DIR = build
-ISO_DIR = iso
-OUTPUT_DIR = output
+# Linker ayarları
+LDFLAGS = -T linker.ld
 
-# Dosyalar
-KERNEL_SRC = $(KERNEL_DIR)/kernel.c $(KERNEL_DIR)/memory.c $(KERNEL_DIR)/process.c $(KERNEL_DIR)/fs.c $(KERNEL_DIR)/syscall.c
-USERLAND_SRC = $(USERLAND_DIR)/shell.c $(USERLAND_DIR)/utils.c
+# Kök dizindeki tüm kaynak dosyalar
+SRC_ROOT = kernel/main.c kernel/init.c kernel/paging.c kernel/process.c kernel/timer.c kernel/memory.c \
+           drivers/disk.c drivers/keyboard.c \
+           fs/vfs.c fs/ext2.c \
+           net/socket.c net/tcp.c net/udp.c \
+           shell/shell.c shell/parser.c \
+           libc/math.c libc/errno.c libc/stdlib.c libc/string.c
 
-KERNEL_OBJ = $(BUILD_DIR)/kernel.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/process.o $(BUILD_DIR)/fs.o $(BUILD_DIR)/syscall.o
-USERLAND_OBJ = $(BUILD_DIR)/shell.o $(BUILD_DIR)/utils.o
+# Kök dizindeki tüm header dosyalar
+HEADERS = include/assert.h include/ctype.h include/stdio.h include/stddef.h include/stdint.h include/string.h \
+          kernel/init.h kernel/paging.h kernel/process.h kernel/timer.h kernel/memory.h \
+          drivers/disk.h drivers/keyboard.h \
+          fs/vfs.h fs/ext2.h \
+          net/socket.h net/tcp.h net/udp.h \
+          shell/shell.h shell/parser.h \
+          libc/math.h libc/errno.h libc/stdlib.h
 
-TARGET_KERNEL = $(BUILD_DIR)/kernel.bin
-TARGET_USERLAND = $(BUILD_DIR)/userland.bin
+# Assembly kaynak dosyaları
+ASM_SRC = boot/boot.asm
+
+# Nesne dosyaları
+OBJS = $(SRC_ROOT:.c=.o) $(ASM_SRC:.asm=.o)
 
 # Varsayılan hedef
-all: kernel userland iso
+all: $(TARGET)
 
-# Çekirdek derleme
-$(TARGET_KERNEL): $(KERNEL_OBJ)
-	$(CC) -o $@ $^ $(CFLAGS)
+# Hedef dosya oluşturma
+$(TARGET): $(OBJS)
+	$(CC) $(LDFLAGS) -o $(TARGET) $(OBJS)
 
-$(KERNEL_OBJ): $(KERNEL_SRC)
-	mkdir -p $(BUILD_DIR)
-	for src in $(KERNEL_SRC); do \
-		$(CC) -c $$src -o $(BUILD_DIR)/$$(basename $$src .c).o $(CFLAGS); \
-	done
+# .c dosyalarını derleme
+%.o: %.c $(HEADERS)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-# Kullanıcı alanı derleme
-$(TARGET_USERLAND): $(USERLAND_OBJ)
-	$(CC) -o $@ $^ $(CFLAGS)
+# .asm dosyalarını derleme
+%.o: %.asm
+	nasm -f elf32 $< -o $@
 
-$(USERLAND_OBJ): $(USERLAND_SRC)
-	mkdir -p $(BUILD_DIR)
-	for src in $(USERLAND_SRC); do \
-		$(CC) -c $$src -o $(BUILD_DIR)/$$(basename $$src .c).o $(CFLAGS); \
-	done
-
-# ISO oluşturma
-iso: $(TARGET_KERNEL) $(TARGET_USERLAND)
-	mkdir -p $(ISO_DIR)/boot/grub
-	cp $(TARGET_KERNEL) $(ISO_DIR)/boot/
-	cp $(TARGET_USERLAND) $(ISO_DIR)/boot/
-	echo 'set timeout=0' > $(ISO_DIR)/boot/grub/grub.cfg
-	echo 'set default=0' >> $(ISO_DIR)/boot/grub/grub.cfg
-	echo 'menuentry "My OS" {' >> $(ISO_DIR)/boot/grub/grub.cfg
-	echo '  multiboot /boot/kernel.bin' >> $(ISO_DIR)/boot/grub/grub.cfg
-	echo '  boot' >> $(ISO_DIR)/boot/grub/grub.cfg
-	echo '}' >> $(ISO_DIR)/boot/grub/grub.cfg
-	grub-mkrescue -o $(OUTPUT_DIR)/os.iso $(ISO_DIR)
-
-# Temizleme
+# Temizlik
 clean:
-	rm -rf $(BUILD_DIR) $(ISO_DIR) $(OUTPUT_DIR)/os.iso
+	rm -f $(OBJS) $(TARGET)
+
+# Yeniden derleme için
+rebuild: clean all
