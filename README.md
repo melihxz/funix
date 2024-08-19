@@ -1,48 +1,63 @@
-# Funix
+# Funix OS
 
-Funix project is a development project that includes a Unix-like operating system kernel and user-space applications. Funix project features a kernel, file system, memory management, process management, and system calls.
+Funix OS is a project that involves creating a simple operating system kernel along with basic drivers. It serves as a learning tool for those interested in understanding how to develop and compile an operating system kernel.
 
 ## Features
 
-- **Kernel**: A simple kernel with process management, memory management, and file system support.
-- **User Space**: A basic shell and utility functions.
-- **ISO Creation**: Ability to create an ISO image for the kernel and user-space applications.
-- **Build**: Building and ISO image creation using `Makefile`.
+- Basic kernel structure
+- Disk and keyboard drivers
+- Simple file system (ext2)
+- Network stack (TCP/UDP)
+- Basic command-line interface (shell)
+- Basic C library (math, errno, stdlib, string)
 
-## Installation
+## Requirements
 
-Follow these steps to build the project:
+- `gcc` (GNU Compiler Collection)
+- `nasm` (Netwide Assembler)
+- `make` (Build automation tool)
+- An x86 emulator or real hardware (QEMU, VirtualBox, etc.)
 
-1. Install required tools:
-   - `gcc`
-   - `grub`
-   - `qemu`
+## Build Instructions
 
-2. Clone the repository:
+To compile and run the project, follow these steps:
+
+1. **Clone the Project Repository:**
    ```bash
    git clone https://github.com/melihxz/funix.git
    cd funix
    ```
 
-3. Build and create the ISO image:
+2. **Compile the Project:**
    ```bash
    make
    ```
 
-4. To test the ISO image, use `qemu`:
+   This command compiles the kernel and all modules, generating the executable `funix`.
+
+3. **Clean Up:**
    ```bash
-   qemu-system-x86_64 -cdrom output/os.iso
+   make clean
    ```
 
-## Contributing
+   This command removes all temporary files created during the build process.
 
-To contribute to the project, please follow these steps:
+4. **Run the Project:**
+   ```bash
+   qemu-system-x86_64 -drive format=raw,file=funix.img
+   ```
 
-1. Fork the repository.
-2. Create a new branch for your feature or bug fix.
-3. Make your changes and commit them.
-4. Create a pull request.
+   You can test the operating system using QEMU.
 
-## License
+## Project Structure
 
-This project is licensed under the [MIT License](LICENSE).
+- **`boot/`**: Boot phase and bootloader code.
+- **`kernel/`**: Kernel code and core functionalities.
+- **`drivers/`**: Disk, keyboard, and other drivers.
+- **`fs/`**: File system implementations.
+- **`net/`**: Networking stack.
+- **`shell/`**: Command-line interface.
+- **`libc/`**: Basic C library.
+- **`include/`**: General header files.
+- **`Makefile`**: Project build file.
+- **`linker.ld`**: Linker script.
